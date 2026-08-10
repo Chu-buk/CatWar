@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CatWar Расписание
 // @namespace    http://tampermonkey.net/
-// @version      4.4
+// @version      4.5
 // @description  Блок с расписанием и обратным отсчетом до следующего события (МСК)
 // @author       Chubuk (Deepseek)
 // @match        https://catwar.su/cw3/*
@@ -35,27 +35,22 @@
     // Получаем текущее время по МСК
     function getMoscowTime() {
         const now = new Date();
-        // Получаем смещение UTC в минутах для Москвы (UTC+3)
-        const moscowOffset = 3 * 60; // 3 часа в минутах
-        const localOffset = now.getTimezoneOffset(); // смещение локального времени от UTC в минутах
+        const moscowOffset = 3 * 60;
+        const localOffset = now.getTimezoneOffset();
         const moscowTime = new Date(now.getTime() + (localOffset + moscowOffset) * 60000);
         return moscowTime;
     }
 
-    function getEventTime(mskTimeStr, baseDate) {
-        const [hours, minutes] = mskTimeStr.split(':').map(Number);
-        const eventDate = new Date(baseDate);
-        eventDate.setHours(hours, minutes, 0, 0);
-        return eventDate;
-    }
-
     function findNextEvent() {
         const now = getMoscowTime();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // ВАЖНО: создаем дату с началом дня (00:00:00)
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         
         // Создаем события на сегодня
         const todayEvents = SCHEDULE_DATA.map(([mskTime, event]) => {
-            const eventDate = getEventTime(mskTime, today);
+            const [hours, minutes] = mskTime.split(':').map(Number);
+            const eventDate = new Date(today);
+            eventDate.setHours(hours, minutes, 0, 0);
             return { mskTime, event, date: eventDate };
         });
         
@@ -73,7 +68,9 @@
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const firstEvent = SCHEDULE_DATA[0];
-        const eventDate = getEventTime(firstEvent[0], tomorrow);
+        const [hours, minutes] = firstEvent[0].split(':').map(Number);
+        const eventDate = new Date(tomorrow);
+        eventDate.setHours(hours, minutes, 0, 0);
         return { mskTime: firstEvent[0], event: firstEvent[1], date: eventDate };
     }
 
@@ -88,7 +85,6 @@
     }
 
     function createScheduleBlock() {
-        // Удаляем старые блоки
         const oldBlock = document.getElementById('catwar-schedule');
         if (oldBlock) oldBlock.remove();
         const oldTr = document.getElementById('catwar-schedule-tr');
@@ -103,7 +99,6 @@
         const trMouth = document.getElementById('tr_mouth');
         if (!trMouth) return false;
 
-        // Добавляем новую строку в grid через style
         const styleId = 'catwar-grid-style';
         let gridStyle = document.getElementById(styleId);
         if (!gridStyle) {
@@ -123,7 +118,6 @@
             }
         `;
 
-        // Создаем новый tr с id, который мы указали в grid
         const newTr = document.createElement('tr');
         newTr.id = 'catwar-schedule-tr';
 
@@ -133,7 +127,6 @@
             vertical-align: top;
         `;
 
-        // Создаём блок
         const block = document.createElement('div');
         block.id = 'catwar-schedule';
         block.style.cssText = `
@@ -155,7 +148,6 @@
             box-sizing: border-box;
         `;
 
-        // Заголовок
         const title = document.createElement('div');
         title.style.cssText = `
             font-weight: bold;
@@ -168,7 +160,6 @@
         `;
         title.textContent = '📋 Расписание сборов (МСК)';
 
-        // Контейнер списка
         const listContainer = document.createElement('div');
         listContainer.id = 'catwar-schedule-list-container';
         listContainer.style.cssText = `
@@ -178,7 +169,6 @@
             min-height: 0;
         `;
 
-        // Стили скроллбара
         const styleScrollbar = document.createElement('style');
         styleScrollbar.textContent = `
             #catwar-schedule-list-container::-webkit-scrollbar {
@@ -202,7 +192,6 @@
         `;
         document.head.appendChild(styleScrollbar);
 
-        // Список
         const list = document.createElement('ul');
         list.style.cssText = `
             list-style: none;
@@ -241,7 +230,6 @@
             list.appendChild(li);
         });
 
-        // Обратный отсчет
         countdownLi = document.createElement('li');
         countdownLi.id = 'catwar-countdown';
         countdownLi.style.cssText = `
@@ -274,26 +262,19 @@
         newTd.appendChild(block);
         newTr.appendChild(newTd);
 
-        // Вставляем ПОСЛЕ tr_mouth (между tr_mouth и tr_info)
         tbody.insertBefore(newTr, trMouth.nextSibling);
 
-        // Запускаем обновление счетчика
         if (window.countdownInterval) clearInterval(window.countdownInterval);
 
         function updateCountdown() {
             const nextEvent = findNextEvent();
             const diff = getTimeDiff(nextEvent.date);
-            
-            console.log('Следующее событие:', nextEvent.event, 'в', nextEvent.mskTime);
-            console.log('Текущее время МСК:', getMoscowTime().toLocaleTimeString());
-            console.log('Осталось миллисекунд:', diff.total);
 
             if (diff.total <= 0 && diff.total > -300000) {
                 countdownText.innerHTML = `<strong>${nextEvent.event}</strong> сейчас! 🎯`;
                 countdownText.style.color = '#4caf50';
                 countdownLi.style.background = '#1a3a1a';
             } else if (diff.total <= 0) {
-                // Если событие прошло, обновляем и находим следующее
                 updateCountdown();
                 return;
             } else {
