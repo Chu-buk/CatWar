@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         CatWar Расписание
+// @name         CatWar Расписание СК МСК
 // @namespace    http://tampermonkey.net/
 // @version      4.5
 // @description  Блок с расписанием и обратным отсчетом до следующего события (МСК)
