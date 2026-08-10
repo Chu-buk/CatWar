@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         CatWar Расписание
+// @name         CatWar Расписание СК Омск
 // @namespace    http://tampermonkey.net/
 // @version      4.1
 // @description  Блок с расписанием и обратным отсчетом до следующего события
