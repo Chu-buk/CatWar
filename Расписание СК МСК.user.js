@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         CatWar Расписание
 // @namespace    http://tampermonkey.net/
-// @version      4.2
-// @description  Блок с расписанием и обратным отсчетом до следующего события
+// @version      4.3
+// @description  Блок с расписанием и обратным отсчетом до следующего события (МСК)
 // @author       Chubuk (Deepseek)
 // @match        https://catwar.su/cw3/*
 // @match        https://catwar.net/cw3/*
@@ -32,8 +32,18 @@
     let countdownText = null;
     let countdownLi = null;
 
-    function getEventTime(mskTimeStr) {
+    // Получаем текущее время по МСК
+    function getMoscowTime() {
         const now = new Date();
+        // Получаем смещение UTC в минутах для Москвы (UTC+3)
+        const moscowOffset = 3 * 60; // 3 часа в минутах
+        const localOffset = now.getTimezoneOffset(); // смещение локального времени от UTC в минутах
+        const moscowTime = new Date(now.getTime() + (localOffset + moscowOffset) * 60000);
+        return moscowTime;
+    }
+
+    function getEventTime(mskTimeStr) {
+        const now = getMoscowTime();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const [hours, minutes] = mskTimeStr.split(':').map(Number);
         const eventDate = new Date(today);
@@ -49,7 +59,7 @@
     }
 
     function findNextEvent() {
-        const now = new Date();
+        const now = getMoscowTime();
         const events = getTodayEvents();
         events.sort((a, b) => a.date - b.date);
         for (const ev of events) {
@@ -62,7 +72,7 @@
     }
 
     function getTimeDiff(targetDate) {
-        const now = new Date();
+        const now = getMoscowTime();
         const diff = targetDate - now;
         if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0, total: diff };
         const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -150,7 +160,7 @@
             text-align: center;
             flex-shrink: 0;
         `;
-        title.textContent = '📋 Расписание сборов';
+        title.textContent = '📋 Расписание сборов (МСК)';
 
         // Контейнер списка
         const listContainer = document.createElement('div');
