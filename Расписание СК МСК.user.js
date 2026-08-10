@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CatWar Расписание
 // @namespace    http://tampermonkey.net/
-// @version      4.3
+// @version      4.4
 // @description  Блок с расписанием и обратным отсчетом до следующего события (МСК)
 // @author       Chubuk (Deepseek)
 // @match        https://catwar.su/cw3/*
@@ -42,33 +42,39 @@
         return moscowTime;
     }
 
-    function getEventTime(mskTimeStr) {
-        const now = getMoscowTime();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    function getEventTime(mskTimeStr, baseDate) {
         const [hours, minutes] = mskTimeStr.split(':').map(Number);
-        const eventDate = new Date(today);
+        const eventDate = new Date(baseDate);
         eventDate.setHours(hours, minutes, 0, 0);
         return eventDate;
     }
 
-    function getTodayEvents() {
-        return SCHEDULE_DATA.map(([mskTime, event]) => {
-            const eventDate = getEventTime(mskTime);
-            return { mskTime, event, date: eventDate };
-        });
-    }
-
     function findNextEvent() {
         const now = getMoscowTime();
-        const events = getTodayEvents();
-        events.sort((a, b) => a.date - b.date);
-        for (const ev of events) {
-            if (ev.date > now) return ev;
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        // Создаем события на сегодня
+        const todayEvents = SCHEDULE_DATA.map(([mskTime, event]) => {
+            const eventDate = getEventTime(mskTime, today);
+            return { mskTime, event, date: eventDate };
+        });
+        
+        // Сортируем по времени
+        todayEvents.sort((a, b) => a.date - b.date);
+        
+        // Ищем первое событие, которое еще не наступило
+        for (const ev of todayEvents) {
+            if (ev.date > now) {
+                return ev;
+            }
         }
-        const first = events[0];
-        const tomorrow = new Date(first.date);
+        
+        // Если все события сегодня прошли, берем первое событие на завтра
+        const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        return { ...first, date: tomorrow };
+        const firstEvent = SCHEDULE_DATA[0];
+        const eventDate = getEventTime(firstEvent[0], tomorrow);
+        return { mskTime: firstEvent[0], event: firstEvent[1], date: eventDate };
     }
 
     function getTimeDiff(targetDate) {
@@ -277,12 +283,17 @@
         function updateCountdown() {
             const nextEvent = findNextEvent();
             const diff = getTimeDiff(nextEvent.date);
+            
+            console.log('Следующее событие:', nextEvent.event, 'в', nextEvent.mskTime);
+            console.log('Текущее время МСК:', getMoscowTime().toLocaleTimeString());
+            console.log('Осталось миллисекунд:', diff.total);
 
             if (diff.total <= 0 && diff.total > -300000) {
                 countdownText.innerHTML = `<strong>${nextEvent.event}</strong> сейчас! 🎯`;
                 countdownText.style.color = '#4caf50';
                 countdownLi.style.background = '#1a3a1a';
             } else if (diff.total <= 0) {
+                // Если событие прошло, обновляем и находим следующее
                 updateCountdown();
                 return;
             } else {
