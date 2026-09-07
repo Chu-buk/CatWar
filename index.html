@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatWar - Визитка</title>
+    <style>
+        /* === Базовые стили === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe Script', cursive, sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 1000px;
+            height: 813px;
+            background: #2a241e;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        /* === Все слои === */
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .layer img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .layer a,
+        .layer .clickable {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        /* === Стили для страниц (переключаемые блоки) === */
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            pointer-events: none;
+        }
+
+        .page.active {
+            display: block;
+            pointer-events: auto;
+        }
+
+        .page img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* === Закладки (табы) === */
+        .tab {
+            position: absolute;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: opacity 0.15s;
+            z-index: 100;
+        }
+
+        .tab img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .tab:hover {
+            opacity: 0.85;
+        }
+
+        /* === Кликабельные области (невидимые ссылки) === */
+        .click-area {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            z-index: 150;
+        }
+
+        /* === Аудиоплеер === */
+        #audioPlayer {
+            position: absolute;
+            z-index: 160;
+            pointer-events: auto;
+            display: none;
+        }
+
+        #audioPlayer.active {
+            display: block;
+        }
+
+        #audioPlayer button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        #audioPlayer button img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .audiobar {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 161;
+            display: none;
+        }
+
+        .audiobar.active {
+            display: block;
+        }
+
+        .audiobar input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #e7d6b8;
+            border-radius: 2px;
+            outline: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .audiobar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #311b11;
+            cursor: pointer;
+        }
+
+        .audiobar input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #311b11;
+            border: none;
+            cursor: pointer;
+        }
+
+        .audiobar input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: #e7d6b8;
+            border-radius: 2px;
+        }
+
+        .audiobar input[type="range"]::-moz-range-track {
+            height: 4px;
+            background: #e7d6b8;
+            border-radius: 2px;
+            border: none;
+        }
+
+        /* === Ссылки на соцсети === */
+        .social-link {
+            position: absolute;
+            pointer-events: auto;
+            z-index: 200;
+            display: block;
+            text-decoration: none;
+            color: #120b79;
+            font-size: 7px;
+            letter-spacing: 2px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .social-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .social-link-dark {
+            color: #1a1818;
+        }
+
+        /* === Стрелки навигации === */
+        .nav-arrow {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 180;
+            display: none;
+        }
+
+        .nav-arrow.active {
+            display: block;
+        }
+
+        .nav-arrow img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* === Кнопки-заглушки для невидимых областей === */
+        .invisible-btn {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            z-index: 120;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+    <!-- ========== ОСНОВНЫЕ СТРАНИЦЫ (переключаются) ========== -->
+
+    <!-- Главная (a=0) -->
+    <div class="page active" id="page-main">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%93%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F%20%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0%20-%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%BE%D0%B2%D0%BE%D0%B1%D1%80%D0%B0%D0%BD%D1%86%D0%B5%D0%B2.png" alt="Главная">
+    </div>
+
+    <!-- Лор (a=1) -->
+    <div class="page" id="page-lore">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%A1%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0%20%D0%BB%D0%BE%D1%80%20%D0%B23.png" alt="Лор">
+    </div>
+
+    <!-- Характер (a=2) -->
+    <div class="page" id="page-personality">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%A1%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0%20%D1%85%D0%B0%D1%80%D0%B0%D0%BA%D1%82%D0%B5%D1%80.png" alt="Характер">
+    </div>
+
+    <!-- Пустая страница (a=3) -->
+    <div class="page" id="page-empty">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%9F%D1%83%D1%81%D1%82%D0%B0%D1%8F%20%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0.png" alt="Пустая">
+    </div>
+
+    <!-- История благо 1 (a=4, b=4) -->
+    <div class="page" id="page-story1">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%A1%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0%20%D0%B8%D1%81%D1%82%D0%BE%D1%80%D0%B8%D0%B8%20%D0%B1%D0%BB%D0%B0%D0%B3%D0%BE%201.png" alt="История 1">
+    </div>
+
+    <!-- История благо 2 (b=5) -->
+    <div class="page" id="page-story2">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%A1%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0%20%D0%B8%D1%81%D1%82%D0%BE%D1%80%D0%B8%D0%B8%20%D0%B1%D0%BB%D0%B0%D0%B3%D0%BE%202.png" alt="История 2">
+    </div>
+
+    <!-- История брат (b=6) -->
+    <div class="page" id="page-story3">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%A1%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0%20%D0%B8%D1%81%D1%82%D0%BE%D1%80%D0%B8%D0%B8%20%D0%B1%D1%80%D0%B0%D1%82.png" alt="История 3">
+    </div>
+
+    <!-- ========== ДЕКОРАТИВНЫЙ СЛОЙ (lay3) только на главной ========== -->
+    <div class="layer" id="lay3" style="top:53.99%; left:55.6%; width:41.25%; height:45.63%; pointer-events:none;">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/lay3.png" alt="">
+    </div>
+
+    <!-- ========== ССЫЛКИ (соцсети) ========== -->
+    <a href="https://vk.com/nocher" class="social-link" style="top:13.47%; left:77.59%; width:3.36%; height:2.21%; transform:rotate(12.78deg); font-size:7px;">VK</a>
+    <a href="https://t.me/chu_buk" class="social-link" style="top:14.55%; left:81.28%; width:3.36%; height:2.21%; transform:rotate(12deg); font-size:7px;">TG</a>
+    <a href="https://f2.toyhou.se/file/f2-toyhou-se/images/104530402_egkdyllG0kxkDRb.png" class="social-link" style="top:15.53%; left:74.18%; width:7.65%; height:3.2%; transform:rotate(12deg); font-size:7px;">TOY1</a>
+    <a href="https://f2.toyhou.se/file/f2-toyhou-se/images/104889102_1wojgXNENSz2ctF.png" class="social-link" style="top:17.62%; left:82.18%; width:7.65%; height:3.2%; transform:rotate(12deg); font-size:7px;">TOY2</a>
+    <a href="https://toyhou.se/31533240.laiane" class="social-link" style="top:17.37%; left:73.78%; width:7.65%; height:3.2%; transform:rotate(12deg); font-size:7px;">TOY3</a>
+    <a href="https://chubuk.pixieset.com/laiane/" class="social-link" style="top:19.22%; left:81.28%; width:5.84%; height:3.45%; transform:rotate(12deg); font-size:7px;">PIX</a>
+
+    <!-- Невидимые области для кликов (соцсети и др.) -->
+    <a href="https://docs.google.com/spreadsheets/d/1t6GmASr5ExggViirjX7wlSe5xGUtSJJPx5ojM73-r_Y/edit?gid=1765801688#gid=1765801688" class="social-link social-link-dark" style="top:53.99%; left:55.2%; width:7.27%; height:1.97%; font-size:7px; letter-spacing:0; opacity:0.1;">_</a>
+
+    <!-- ========== КОТЫ (ссылки на cat-страницы) ========== -->
+    <a href="#" class="social-link social-link-dark" style="top:54.95%; left:90.33%; width:3.06%; height:2.21%; transform:rotate(3deg); font-size:7px;" onclick="alert('cat557463')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:56.73%; left:87.23%; width:3.06%; height:2.21%; transform:rotate(-20.61deg); font-size:7px;" onclick="alert('cat1538306')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:58.57%; left:83.11%; width:3.06%; height:2.21%; transform:rotate(33.57deg); font-size:7px;" onclick="alert('cat1380944')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:60.02%; left:88.5%; width:3.06%; height:2.21%; font-size:7px;" onclick="alert('cat9694')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:58.3%; left:92%; width:3.06%; height:2.21%; transform:rotate(7deg); font-size:7px;" onclick="alert('cat1649090')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:65.8%; left:87.3%; width:3.06%; height:2.21%; transform:rotate(1deg); font-size:7px;" onclick="alert('cat1688537')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:63.13%; left:90.33%; width:5.37%; height:2.46%; transform:rotate(10deg); font-size:7px;" onclick="alert('cat1633085')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:70.6%; left:92.2%; width:5.37%; height:2.46%; transform:rotate(-51deg); font-size:7px;" onclick="alert('cat1678463')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:70.59%; left:84.55%; width:5.37%; height:2.46%; transform:rotate(15deg); font-size:7px;" onclick="alert('cat1559573')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:67.52%; left:82.88%; width:5.37%; height:2.46%; transform:rotate(25deg); font-size:7px;" onclick="alert('cat1330492')">🐱</a>
+    <a href="#" class="social-link social-link-dark" style="top:71.05%; left:89.10%; width:5.37%; height:2.46%; transform:rotate(-10deg); font-size:7px;" onclick="alert('cat140817')">🐱</a>
+
+    <!-- ========== ЗАКЛАДКИ (ТАБЫ) ========== -->
+
+    <!-- ЛОР (активна, если a=1) -->
+    <div class="tab" id="tab-lore-active" style="top:35.05%; left:81%; width:9.7%; height:4.92%; display:none;">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%BB%D0%BE%D1%80%20%D0%B0%D0%BA%D1%82%D0%B8%D0%B2.png" alt="Лор актив">
+    </div>
+
+    <!-- ЛОР (неактивна, кликабельна) -->
+    <div class="tab" id="tab-lore" style="top:35.05%; left:82.2%; width:8.4%; height:5.41%;" onclick="goToPage(1)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%BB%D0%BE%D1%80.png" alt="Лор">
+    </div>
+
+    <!-- ВНЕШНОСТЬ (неактивна) -->
+    <div class="tab" id="tab-appearance" style="top:43.67%; left:82.4%; width:8.4%; height:5.41%;" onclick="goToPage(3)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B2%D0%BD%D0%B5%D1%88%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png" alt="Внешность">
+    </div>
+
+    <!-- ХАРАКТЕР (активна, если a=2) -->
+    <div class="tab" id="tab-personality-active" style="top:39.36%; left:81%; width:9.7%; height:4.92%; display:none;">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D1%85%D0%B0%D1%80%D0%B0%D0%BA%D1%82%D0%B5%D1%80%20%D0%B0%D0%BA%D1%82%D0%B8%D0%B2.png" alt="Характер актив">
+    </div>
+
+    <!-- ХАРАКТЕР (неактивна) -->
+    <div class="tab" id="tab-personality" style="top:39.36%; left:82.4%; width:8.4%; height:5.41%;" onclick="goToPage(2)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D1%85%D0%B0%D1%80%D0%B0%D0%BA%D1%82%D0%B5%D1%80.png" alt="Характер">
+    </div>
+
+    <!-- ИСТОРИИ (неактивна) -->
+    <div class="tab" id="tab-stories" style="top:47.97%; left:82.6%; width:8.4%; height:5.41%;" onclick="goToPage(4)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B8%D1%81%D1%82%D0%BE%D1%80%D0%B8%D0%B8.png" alt="Истории">
+    </div>
+
+    <!-- ИСТОРИИ (активна, если a>=4) -->
+    <div class="tab" id="tab-stories-active" style="top:47.97%; left:81%; width:9.7%; height:4.92%; display:none;">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B8%D1%81%D1%82%D0%BE%D1%80%D0%B8%D0%B8%20%D0%B0%D0%BA%D1%82%D0%B8%D0%B2.png" alt="Истории актив">
+    </div>
+
+    <!-- ========== ЛЕВЫЕ ЗАКЛАДКИ (для страниц историй) ========== -->
+    <div class="tab" id="tab-lore-left" style="top:35.05%; left:3.3%; width:8.4%; height:4.8%; display:none;" onclick="goToPage(1)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%BB%D0%BE%D1%80%20%D1%81%D0%BB%D0%B5%D0%B2%D0%B0.png" alt="Лор слева">
+    </div>
+
+    <div class="tab" id="tab-personality-left" style="top:39.36%; left:3.3%; width:8.4%; height:4.8%; display:none;" onclick="goToPage(2)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D1%85%D0%B0%D1%80%D0%B0%D0%BA%D1%82%D0%B5%D1%80%20%D1%81%D0%BB%D0%B5%D0%B2%D0%B0.png" alt="Характер слева">
+    </div>
+
+    <div class="tab" id="tab-appearance-left" style="top:43.67%; left:3.3%; width:8.4%; height:4.8%; display:none;" onclick="goToPage(3)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B2%D0%BD%D0%B5%D1%88%D0%BD%D0%BE%D1%81%D1%82%D1%8C%20%D1%81%D0%BB%D0%B5%D0%B2%D0%B0.png" alt="Внешность слева">
+    </div>
+
+    <div class="tab" id="tab-main-left" style="top:30.75%; left:3.3%; width:8.4%; height:5.29%; display:none;" onclick="goToPage(0)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F%20%D1%81%D0%BB%D0%B5%D0%B2%D0%B0.png" alt="Главная слева">
+    </div>
+
+    <!-- ГЛАВНАЯ (активна, если a=0) -->
+    <div class="tab" id="tab-main-active" style="top:30.75%; left:81%; width:9.7%; height:4.92%; display:none;">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F%20%D0%B0%D0%BA%D1%82%D0%B8%D0%B2.png" alt="Главная актив">
+    </div>
+
+    <!-- ГЛАВНАЯ (неактивна) -->
+    <div class="tab" id="tab-main" style="top:30.75%; left:82.2%; width:8.4%; height:5.29%; display:none;" onclick="goToPage(0)">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B3%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F%20%D1%81%D0%BB%D0%B5%D0%B2%D0%B0.png" alt="Главная">
+    </div>
+
+    <!-- ВНЕШНОСТЬ (активна, если a=3) -->
+    <div class="tab" id="tab-appearance-active" style="top:43.67%; left:81%; width:9.7%; height:4.92%; display:none;">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%97%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B0%20%D0%B2%D0%BD%D0%B5%D1%88%D0%BD%D0%BE%D1%81%D1%82%D1%8C%20%D0%B0%D0%BA%D1%82%D0%B8%D0%B2.png" alt="Внешность актив">
+    </div>
+
+    <!-- ========== АУДИОПЛЕЕР (только на странице Характер) ========== -->
+    <div id="audioPlayer" style="top:69.37%; left:48.5%; width:7.27%; height:7.36%;">
+        <button onclick="toggleAudio()">
+            <img id="playBtnImg" src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/Play.png" alt="Play">
+        </button>
+    </div>
+
+    <div class="audiobar" id="audioBar" style="top:62.23%; left:54.2%; width:15.47%; height:19.59%;">
+        <input type="range" id="audioProgress" min="0" max="100" value="0" style="width:100%; height:4px; background:#e7d6b8; border-radius:2px; -webkit-appearance:none;">
+    </div>
+
+    <!-- ========== СТРЕЛКИ НАВИГАЦИИ (для историй) ========== -->
+    <div class="nav-arrow" id="btnNext" style="top:79.6%; left:70%; width:10.9%; height:2.1%;" onclick="nextStory()">
+        <span style="display:block; width:100%; height:100%; background:rgba(255,255,255,0.01); cursor:pointer;">➡️</span>
+    </div>
+
+    <div class="nav-arrow" id="btnPrev" style="top:79.6%; left:14.3%; width:10.9%; height:2.1%;" onclick="prevStory()">
+        <span style="display:block; width:100%; height:100%; background:rgba(255,255,255,0.01); cursor:pointer;">⬅️</span>
+    </div>
+
+    <div class="nav-arrow" id="btnPrevS" style="top:18.6%; left:10.3%; width:10.9%; height:4.6%;" onclick="prevStory()">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D0%A1%D1%82%D1%80%D0%B5%D0%BB%D0%BA%D0%B0%20%D0%B2%D0%BB%D0%B5%D0%B2%D0%BE.png" alt="Назад">
+    </div>
+
+    <div class="nav-arrow" id="btnNextS" style="top:18.6%; left:37.3%; width:10.9%; height:4.6%;" onclick="nextStory()">
+        <img src="https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/%D1%81%D1%82%D1%80%D0%B5%D0%BB%D0%BA%D0%B0%20%D0%B2%D0%BF%D1%80%D0%B0%D0%B2%D0%BE.png" alt="Вперед">
+    </div>
+
+    <!-- ========== СКРИПТЫ ========== -->
+    <script>
+        // === Переменные состояния ===
+        let a = 0; // текущая страница (0-4)
+        let b = 0; // подстраница для историй (4,5,6)
+        const audio = new Audio('https://www.dropbox.com/scl/fi/8290kk53qpkvhoti5k1zn/Madeaux-Say-It.mp3?rlkey=8tz1itxp0y06tty38ihkjrc54&e=1&st=0vjmk7ae&raw=1');
+        let isPlaying = false;
+
+        // === Функция переключения страниц ===
+        function goToPage(page) {
+            a = page;
+            if (page < 4) b = 0;
+            if (page === 4) b = 4;
+            render();
+        }
+
+        function nextStory() {
+            if (b < 6) {
+                b++;
+                a = 10; // любой >4, чтобы оставаться в режиме историй
+                render();
+            }
+        }
+
+        function prevStory() {
+            if (b > 4) {
+                b--;
+                a = 10;
+                render();
+            } else if (b === 4) {
+                // если на первой истории, переходим на главную
+                goToPage(0);
+            }
+        }
+
+        // === Рендеринг ===
+        function render() {
+            // Скрываем все страницы
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+
+            // Показываем нужную
+            if (a === 0) {
+                document.getElementById('page-main').classList.add('active');
+            } else if (a === 1) {
+                document.getElementById('page-lore').classList.add('active');
+            } else if (a === 2) {
+                document.getElementById('page-personality').classList.add('active');
+            } else if (a === 3) {
+                document.getElementById('page-empty').classList.add('active');
+            } else if (a >= 4) {
+                if (b === 4) document.getElementById('page-story1').classList.add('active');
+                else if (b === 5) document.getElementById('page-story2').classList.add('active');
+                else if (b === 6) document.getElementById('page-story3').classList.add('active');
+            }
+
+            // === Управление видимостью табов ===
+
+            // Главная актив
+            document.getElementById('tab-main-active').style.display = (a === 0) ? 'block' : 'none';
+            // Главная неактивна (показываем всегда, кроме когда активна)
+            document.getElementById('tab-main').style.display = (a !== 0) ? 'block' : 'none';
+
+            // Лор актив
+            document.getElementById('tab-lore-active').style.display = (a === 1) ? 'block' : 'none';
+            // Лор неактивна
+            document.getElementById('tab-lore').style.display = (a !== 1) ? 'block' : 'none';
+
+            // Характер актив
+            document.getElementById('tab-personality-active').style.display = (a === 2) ? 'block' : 'none';
+            // Характер неактивна
+            document.getElementById('tab-personality').style.display = (a !== 2) ? 'block' : 'none';
+
+            // Внешность актив
+            document.getElementById('tab-appearance-active').style.display = (a === 3) ? 'block' : 'none';
+            // Внешность неактивна
+            document.getElementById('tab-appearance').style.display = (a !== 3) ? 'block' : 'none';
+
+            // Истории актив
+            document.getElementById('tab-stories-active').style.display = (a >= 4) ? 'block' : 'none';
+            // Истории неактивна
+            document.getElementById('tab-stories').style.display = (a < 4) ? 'block' : 'none';
+
+            // Левые закладки (показываются, если a>=4 или a===2 или a===3)
+            const showLeftTabs = (a >= 4);
+            document.getElementById('tab-lore-left').style.display = (a >= 4 || a === 3 || a === 2) ? 'block' : 'none';
+            document.getElementById('tab-personality-left').style.display = (a >= 4 || a === 3) ? 'block' : 'none';
+            document.getElementById('tab-appearance-left').style.display = (a >= 4) ? 'block' : 'none';
+            document.getElementById('tab-main-left').style.display = (a >= 4 || a === 3 || a === 2) ? 'block' : 'none';
+
+            // Аудиоплеер (только на странице Характер, a=2)
+            document.getElementById('audioPlayer').classList.toggle('active', a === 2);
+            document.getElementById('audioBar').classList.toggle('active', a === 2);
+
+            // Стрелки навигации
+            document.getElementById('btnNext').style.display = (a >= 4 && b !== 6) ? 'block' : 'none';
+            document.getElementById('btnNextS').style.display = (a >= 4 && b !== 6) ? 'block' : 'none';
+            document.getElementById('btnPrev').style.display = (a >= 4) ? 'block' : 'none';
+            document.getElementById('btnPrevS').style.display = (a === 6) ? 'block' : 'none';
+
+            // lay3 только на главной
+            document.getElementById('lay3').style.display = (a === 0) ? 'block' : 'none';
+        }
+
+        // === Аудиоплеер ===
+        function toggleAudio() {
+            if (isPlaying) {
+                audio.pause();
+                document.getElementById('playBtnImg').src = 'https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/Play.png';
+                isPlaying = false;
+            } else {
+                audio.play();
+                document.getElementById('playBtnImg').src = 'https://raw.githubusercontent.com/Chu-buk/CatWar/refs/heads/main/Pause.png';
+                isPlaying = true;
+            }
+        }
+
+        // Прогресс-бар
+        audio.addEventListener('timeupdate', function() {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('audioProgress').value = progress;
+        });
+
+        document.getElementById('audioProgress').addEventListener('input', function() {
+            const seekTime = (this.value / 100) * audio.duration;
+            audio.currentTime = seekTime;
+        });
+
+        // === Инициализация ===
+        render();
+
+        console.log('✅ Сайт CatWar успешно загружен!');
+        console.log('📄 Текущая страница: a=' + a + ', b=' + b);
+    </script>
+
+</div>
+</body>
+</html>
